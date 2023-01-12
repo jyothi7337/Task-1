@@ -8,7 +8,7 @@
 #include<linux/uaccess.h>
 #include<linux/gpio.h>
 
-#define MAX 3
+#define MAX_LEDS 3
 
 
 #define LED_RED 21
@@ -24,7 +24,7 @@ static struct gpio Leds_gpio[] = {
 
 static dev_t device_number;
 static struct class* Led_class;
-static struct cdev Led_cdev[MAX];
+static struct cdev Led_cdev[MAX_LEDS];
 
 
 
@@ -144,7 +144,7 @@ static struct file_operations fops = {
 };
 
 static int __init Led_init(void){
-	int err = alloc_chrdev_region(&device_number,0,MAX,"Led_devices");
+	int err = alloc_chrdev_region(&device_number,0,MAX_LEDS,"Led_devices");
 	dev_t dev_num;
 	int major,i;
 	if(err < 0){
@@ -160,7 +160,7 @@ static int __init Led_init(void){
 		unregister_chrdev_region(device_number,1);
 		return -2;
 	}
-	for(i=0;i<MAX;i++){
+	for(i=0;i<MAX_LEDS;i++){
 		dev_num = MKDEV(major,i);
 		printk("1st minor number = %d\n",MINOR(dev_num));
 		cdev_init(&Led_cdev[i],&fops);
@@ -174,7 +174,7 @@ static int __init Led_init(void){
 			printk("Failed to create device file in /dev directory\n");
 			cdev_del(&Led_cdev[i]);
 			class_destroy(Led_class);
-			unregister_chrdev_region(device_number,1);
+			unregister_chrdev_region(device_number,MAX_LEDS);
 			return -4;
 		}
 	}
@@ -188,13 +188,13 @@ static void __exit Led_cleanup(void){
 	dev_t dev_num;
 	int i,major;
 	major = MAJOR(device_number);
-	for(i=0;i<MAX;i++){
+	for(i=0;i<MAX_LEDS;i++){
 		dev_num = MKDEV(major ,i);
 		cdev_del(&Led_cdev[i]);
 		device_destroy(Led_class,dev_num);
 	}
 	class_destroy(Led_class);
-	unregister_chrdev_region(device_number,MAX);
+	unregister_chrdev_region(device_number,MAX_LEDS);
 	printk("Device driver has been removed succefully\n");
 }
 
